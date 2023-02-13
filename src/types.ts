@@ -1,6 +1,6 @@
 export interface ImagePrompts {
   name: string;
-  imageBlob: File;
+  imageFile: File;
   promptsString?: string;
   isSaved: 0 | 1; // booleans can't be indexed
 }

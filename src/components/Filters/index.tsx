@@ -1,46 +1,55 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { TagsSelect } from '../TagsSelect';
 import { Button, FormControlLabel, Switch } from '@mui/material';
-import { Persist } from 'react-persist';
 import { FiltersState, UpdateFilters } from './hooks/useFiltersState';
 import { FiltersWrapper } from './styled';
 import { TagObject } from '../../types';
 
 export interface FiltersProps {
-  cacheKey: string;
   filters: FiltersState;
   updateFilters: UpdateFilters;
   onApply?: (filters: FiltersState) => void;
 }
 
 export const Filters: React.FC<FiltersProps> = ({
-  cacheKey,
   filters,
   updateFilters,
   onApply: onApplyProp,
 }) => {
-  const [tagsFilterSelection, setTagsFilterSelection] = useState<TagObject[]>([]);
-  const [isOnlyEmptyPromptsSelection, setIsOnlyEmptyPromptsSelection] = useState(false);
+  const [tagsFilterSelection, setTagsFilterSelection] = useState<TagObject[]>(filters.tagsFilter);
+  const [isOnlyEmptyPromptsSelection, setIsOnlyEmptyPromptsSelection] = useState(
+    filters.isOnlyEmptyPrompts
+  );
+  const [isKeepUnsavedSelection, setIsKeepUnsavedSelection] = useState<boolean>(true);
+  const [isUncroppedSelection, setIsUncroppedSelection] = useState<boolean>(false);
+
+  useEffect(() => {
+    setTagsFilterSelection(filters.tagsFilter);
+    setIsOnlyEmptyPromptsSelection(filters.isOnlyEmptyPrompts);
+    setIsKeepUnsavedSelection(filters.isKeepUnsaved);
+    setIsUncroppedSelection(filters.isUncropped);
+  }, [filters]);
 
   const onApply = useCallback(() => {
-    const newFilters = {
+    const newFilters: FiltersState = {
       tagsFilter: tagsFilterSelection,
       isOnlyEmptyPrompts: isOnlyEmptyPromptsSelection,
+      isKeepUnsaved: isKeepUnsavedSelection,
+      isUncropped: isUncroppedSelection,
     };
     updateFilters(newFilters);
     onApplyProp?.(newFilters);
-  }, [isOnlyEmptyPromptsSelection, onApplyProp, tagsFilterSelection, updateFilters]);
+  }, [
+    isKeepUnsavedSelection,
+    isOnlyEmptyPromptsSelection,
+    isUncroppedSelection,
+    onApplyProp,
+    tagsFilterSelection,
+    updateFilters,
+  ]);
 
   return (
     <FiltersWrapper>
-      <Persist
-        name={cacheKey}
-        data={filters}
-        onMount={(filters) => {
-          updateFilters(filters);
-        }}
-      />
-
       <TagsSelect
         selected={tagsFilterSelection}
         onChange={setTagsFilterSelection}
@@ -54,6 +63,24 @@ export const Filters: React.FC<FiltersProps> = ({
           />
         }
         label="With empty prompts"
+      />
+      <FormControlLabel
+        control={
+          <Switch
+            checked={isKeepUnsavedSelection}
+            onChange={(e) => setIsKeepUnsavedSelection(e.target.checked)}
+          />
+        }
+        label="Don't filter unsaved"
+      />
+      <FormControlLabel
+        control={
+          <Switch
+            checked={isUncroppedSelection}
+            onChange={(e) => setIsUncroppedSelection(e.target.checked)}
+          />
+        }
+        label="Not cropped to 512x512"
       />
 
       <Button onClick={onApply}>Apply</Button>

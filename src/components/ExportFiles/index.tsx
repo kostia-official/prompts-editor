@@ -6,7 +6,7 @@ import {
   useImagesPromptsMutations,
   useGetUnsavedImagesPrompts,
 } from '../../hooks/useImagesPrompts';
-import useLocalStorageState from 'use-local-storage-state';
+import { useLocalStorageState } from '../../hooks/useLocalStorageState';
 
 const { ipcRenderer } = window.require('electron');
 
@@ -14,9 +14,7 @@ export const ExportFiles: React.FC = () => {
   const { imagesPrompts: unsavedImagesPrompts } = useGetUnsavedImagesPrompts();
   const { update } = useImagesPromptsMutations();
 
-  const [exportPath, setExportPath] = useLocalStorageState<string>('exportPath', {
-    defaultValue: '',
-  });
+  const [exportPath, setExportPath] = useLocalStorageState<string>('exportPath', '');
 
   const { enqueueSnackbar } = useSnackbar();
 
@@ -31,14 +29,24 @@ export const ExportFiles: React.FC = () => {
 
     await Promise.all(
       unsavedImagesPrompts.map(async (imagePrompt) => {
-        const { name, promptsString } = imagePrompt;
-        const fileConfig = { name: `${name}.txt`, promptsString };
+        const { name, promptsString, imageFile } = imagePrompt;
         try {
-          await ipcRenderer.invoke('save-file', { exportPath, fileConfig });
+          if (promptsString) {
+            await ipcRenderer.invoke('save-txt', {
+              exportPath,
+              fileConfig: { name: `${name}.txt`, text: promptsString },
+            });
+          }
+
+          const buffer = Buffer.from(await imageFile.arrayBuffer());
+          await ipcRenderer.invoke('save-image', {
+            exportPath,
+            fileConfig: { name: imageFile.name, buffer },
+          });
 
           await update({ ...imagePrompt, isSaved: 1 });
         } catch (err) {
-          enqueueSnackbar(`Can't save prompts for ${name}`, {
+          enqueueSnackbar(`Can't save changes for ${name}`, {
             autoHideDuration: 3000,
             variant: 'error',
           });

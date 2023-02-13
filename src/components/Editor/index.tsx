@@ -1,33 +1,29 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ImagePromptsEditor } from './components/ImagePromptsEditor';
 import { useGetAllImagesPrompts } from '../../hooks/useImagesPrompts';
 import { Pagination, LinearProgress, Box } from '@mui/material';
 import { Wrapper, PaginationWrapper } from './styled';
 import { Filters } from '../Filters';
-import { useFiltersState, FiltersState } from '../Filters/hooks/useFiltersState';
+import { useFiltersState } from '../Filters/hooks/useFiltersState';
 import { ImagePrompts } from '../../types';
 
 const pageSize = 20;
 
 export const Editor: React.FC = () => {
   const [page, setPage] = useState(0);
-  const { filters, updateFilters, getFilteredImagesPrompts } = useFiltersState();
-  const [filteredImagesPrompts, setFilteredImagesPrompts] = useState<ImagePrompts[]>([]);
+  const { filters, updateFilters, getFilteredImagesPrompts } = useFiltersState({ key: 'editor' });
 
   const { imagesPrompts } = useGetAllImagesPrompts();
 
+  const [filteredImagesPrompts, setFilteredImagesPrompts] = useState<ImagePrompts[]>([]);
   useEffect(() => {
-    if (!filteredImagesPrompts.length) {
-      setFilteredImagesPrompts(getFilteredImagesPrompts(imagesPrompts));
-    }
-  }, [filteredImagesPrompts.length, getFilteredImagesPrompts, imagesPrompts]);
-
-  const onFiltersApply = useCallback(
-    (filters: FiltersState) => {
-      setFilteredImagesPrompts(getFilteredImagesPrompts(imagesPrompts, filters));
-    },
-    [getFilteredImagesPrompts, imagesPrompts]
-  );
+    (async () => {
+      console.log('useEffect setFilteredImagesPrompts');
+      const filtered = await getFilteredImagesPrompts(imagesPrompts);
+      console.log('filtered', filtered);
+      setFilteredImagesPrompts(filtered);
+    })();
+  }, [getFilteredImagesPrompts, imagesPrompts, filters]);
 
   const paginatedImagesPrompts = useMemo(() => {
     const start = page * pageSize;
@@ -38,12 +34,7 @@ export const Editor: React.FC = () => {
   return (
     <Wrapper>
       <Box mb={2}>
-        <Filters
-          cacheKey="editorFilter"
-          filters={filters}
-          updateFilters={updateFilters}
-          onApply={onFiltersApply}
-        />
+        <Filters filters={filters} updateFilters={updateFilters} />
       </Box>
 
       {!imagesPrompts && <LinearProgress />}
@@ -52,7 +43,7 @@ export const Editor: React.FC = () => {
         <ImagePromptsEditor key={imagePrompts.name} imagePrompts={imagePrompts} />
       ))}
 
-      {imagesPrompts?.length && (
+      {!!imagesPrompts?.length && (
         <PaginationWrapper>
           <Pagination
             count={Math.ceil(filteredImagesPrompts.length / pageSize)}

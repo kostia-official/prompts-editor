@@ -1,5 +1,4 @@
 import React, { useCallback } from 'react';
-import { Typography } from '@mui/material';
 import { tagsArray } from '../../../../../../data/tags';
 import { TagObject, ImagePrompts } from '../../../../../../types';
 import { Wrapper } from './styled';
@@ -34,7 +33,6 @@ export const PromptsEditor: React.FC<PromptsEditorProps> = ({
 
   return (
     <Wrapper>
-      <Typography gutterBottom>{imagePrompts.name}</Typography>
       <TagsSelect
         selected={promptsTags}
         onChange={(newTags) => {

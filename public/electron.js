@@ -1,12 +1,5 @@
 const path = require('path');
-const {
-  app,
-  BrowserWindow,
-  ipcMain,
-  dialog,
-  globalShortcut,
-  getCurrentWindow,
-} = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, shell } = require('electron');
 const fs = require('fs');
 
 const isDev = require('electron-is-dev');
@@ -33,7 +26,7 @@ function createWindow() {
     win.webContents.openDevTools({ mode: 'detach' });
   }
 
-  globalShortcut.register('CommandOrControl+R', () => {
+  globalShortcut.register('CommandOrControl+Shift+R', () => {
     win.reload();
   });
 }
@@ -58,20 +51,39 @@ app.on('activate', () => {
   }
 });
 
-ipcMain.handle('save-file', async (event, { exportPath, fileConfig }) => {
+ipcMain.handle('save-txt', async (event, { exportPath, fileConfig }) => {
   const savePath = path.join(exportPath, fileConfig.name);
-  await fs.promises.writeFile(savePath, fileConfig.promptsString, { encoding: 'utf8' });
+  await fs.promises.writeFile(savePath, fileConfig.text, { encoding: 'utf8' });
 
   return true;
 });
 
-ipcMain.handle('delete-files', async (event, { exportPath, names }) => {
-  await Promise.all(
-    names.map(async (name) => {
-      const deletePath = path.join(exportPath, name);
-      return fs.promises.unlink(deletePath);
-    })
-  );
+ipcMain.handle('show-file-in-fs', async (event, { exportPath, imageName }) => {
+  const imagePath = path.join(exportPath, imageName);
+  shell.showItemInFolder(imagePath);
+
+  return true;
+});
+
+ipcMain.handle('sync-image-fs', async (event, { exportPath, imageName }) => {
+  const imagePath = path.join(exportPath, imageName);
+  return await fs.promises.readFile(imagePath);
+});
+
+ipcMain.handle('save-image', async (event, { exportPath, fileConfig }) => {
+  const savePath = path.join(exportPath, fileConfig.name);
+  await fs.promises.writeFile(savePath, fileConfig.buffer);
+
+  return true;
+});
+
+ipcMain.handle('delete-files', async (event, { exportPath, imageName, promptsName }) => {
+  try {
+    await fs.promises.unlink(path.join(exportPath, imageName));
+    await fs.promises.unlink(path.join(exportPath, promptsName));
+  } catch (err) {
+    return { imageRemoved: true };
+  }
 
   return true;
 });

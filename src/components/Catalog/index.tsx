@@ -1,5 +1,5 @@
-import { ImageList, ImageListItem, DialogContent, LinearProgress } from '@mui/material';
-import React, { useState, useCallback } from 'react';
+import { ImageList, ImageListItem, DialogContent, LinearProgress, Chip } from '@mui/material';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ImagePrompts } from '../../types';
 import { ImagePromptsWrapper, Prompts, Wrapper, DialogStyled } from './styled';
 import { ImagePromptsEditor } from '../Editor/components/ImagePromptsEditor';
@@ -9,32 +9,47 @@ import { useFiltersState } from '../Filters/hooks/useFiltersState';
 
 export const Catalog: React.FC = () => {
   const [imagePromptsForEdit, setImagePromptsForEdit] = useState<ImagePrompts>();
-  const { filters, updateFilters, getFilteredImagesPrompts } = useFiltersState();
+  const { filters, updateFilters, getFilteredImagesPrompts } = useFiltersState({ key: 'catalog' });
   const { imagesPrompts } = useGetAllImagesPrompts();
+
+  const [filteredImagesPrompts, setFilteredImagesPrompts] = useState<ImagePrompts[]>([]);
+  useEffect(() => {
+    (async () => {
+      const filtered = await getFilteredImagesPrompts(imagesPrompts);
+      setFilteredImagesPrompts(filtered);
+    })();
+  }, [getFilteredImagesPrompts, imagesPrompts, filters]);
 
   const onImagePromptsRemove = useCallback(() => {
     setImagePromptsForEdit(undefined);
   }, []);
 
+  const getImageUrl = useCallback((imageFile: File) => {
+    return window.URL.createObjectURL(imageFile);
+  }, []);
+
   return (
     <>
       <Wrapper>
-        <Filters cacheKey="catalogFilters" filters={filters} updateFilters={updateFilters} />
+        <Filters filters={filters} updateFilters={updateFilters} />
 
         {!imagesPrompts && <LinearProgress />}
 
-        <ImageList cols={4} variant="masonry">
-          {getFilteredImagesPrompts(imagesPrompts).map((item) => (
+        <ImageList cols={3} variant="masonry">
+          {filteredImagesPrompts.map((item: ImagePrompts) => (
             <ImagePromptsWrapper key={item.name} onClick={() => setImagePromptsForEdit(item)}>
               <ImageListItem>
-                <img
-                  src={window.URL.createObjectURL(item.imageBlob)}
-                  alt={item.name}
-                  loading="lazy"
-                />
+                <img src={getImageUrl(item.imageFile)} alt={item.name} loading="lazy" />
               </ImageListItem>
 
-              {item.promptsString && <Prompts>{item.promptsString}</Prompts>}
+              {item.promptsString && (
+                <Prompts>
+                  {item.promptsString}{' '}
+                  {!item.isSaved && (
+                    <Chip label="Unsaved" color="warning" variant="filled" size="small" />
+                  )}
+                </Prompts>
+              )}
             </ImagePromptsWrapper>
           ))}
         </ImageList>

@@ -21,7 +21,7 @@ async function parseFiles(
       if (!existingImagesPrompts) {
         existingImagesPrompts = {
           name: fileName,
-          imageBlob: file,
+          imageFile: file,
           isSaved: 1,
         };
         imagesPrompts.push(existingImagesPrompts);
