@@ -1,11 +1,16 @@
 import React, { useCallback, Ref } from 'react';
-import { FixedCropper, ImageRestriction, FixedCropperRef, ImageSize } from 'react-advanced-cropper';
+import {
+  Cropper as AdvanceCropper,
+  ImageRestriction,
+  CropperRef,
+  ImageSize,
+} from 'react-advanced-cropper';
 import { ImageUrlResolver } from '../../../../../../common/components/ImageUrlResolver';
 import { ImagePrompts } from '../../../../../../types';
 import { ImageWrapper } from './styled';
 
 export interface CropperProps {
-  cropperRef: Ref<FixedCropperRef>;
+  cropperRef: Ref<CropperRef>;
   imagePrompts: ImagePrompts;
   onImageSizeLoaded: (imageSize: ImageSize) => void;
 }
@@ -16,7 +21,7 @@ export const Cropper: React.FC<CropperProps> = ({
   onImageSizeLoaded,
 }) => {
   const onImageLoaded = useCallback(
-    (cropper: FixedCropperRef) => {
+    (cropper: CropperRef) => {
       const isLoaded = cropper.isLoaded();
       const image = cropper.getImage();
 
@@ -32,7 +37,7 @@ export const Cropper: React.FC<CropperProps> = ({
     <ImageWrapper>
       <ImageUrlResolver file={imagePrompts.imageFile}>
         {(imageUrl) => (
-          <FixedCropper
+          <AdvanceCropper
             ref={cropperRef}
             src={imageUrl}
             style={{ width: '512px' }}
@@ -41,11 +46,13 @@ export const Cropper: React.FC<CropperProps> = ({
               handlers: true,
               lines: false,
               movable: false,
-              resizable: false,
+              resizable: true,
             }}
-            stencilSize={{
-              width: 512,
-              height: 512,
+            defaultSize={({ imageSize, visibleArea }) => {
+              return {
+                width: (visibleArea || imageSize).width,
+                height: (visibleArea || imageSize).height,
+              };
             }}
             backgroundWrapperProps={{
               scaleImage: {

@@ -4,8 +4,8 @@
   "private": true,
   "main": "public/electron.js",
   "scripts": {
-    "start": "PORT=4004 react-scripts start",
-    "dev": "concurrently -k \"BROWSER=none npm start\" \"npm:electron\"",
+    "start:web": "PORT=4004 react-scripts start",
+    "start": "concurrently -k \"BROWSER=none yarn start:web\" \"npm:electron\"",
     "electron": "wait-on tcp:4004 && electron .",
     "build": "react-scripts build",
     "test": "react-scripts test",

@@ -18,9 +18,7 @@ export const Editor: React.FC = () => {
   const [filteredImagesPrompts, setFilteredImagesPrompts] = useState<ImagePrompts[]>([]);
   useEffect(() => {
     (async () => {
-      console.log('useEffect setFilteredImagesPrompts');
       const filtered = await getFilteredImagesPrompts(imagesPrompts);
-      console.log('filtered', filtered);
       setFilteredImagesPrompts(filtered);
     })();
   }, [getFilteredImagesPrompts, imagesPrompts, filters]);

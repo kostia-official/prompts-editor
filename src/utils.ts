@@ -56,3 +56,27 @@ export async function getImageSize(file: File): Promise<ImageSize> {
     };
   });
 }
+
+export const cleanBrackets = (str: string) => {
+  return str.replaceAll('\\(', '').replaceAll('\\)', '');
+};
+
+export function countBrackets(str: string) {
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] !== '(') {
+      break;
+    }
+    count++;
+  }
+  return count;
+}
+
+export function addBrackets(text: string, attention: number): string {
+  if (attention <= 0 || !attention) {
+    return text;
+  }
+
+  const escapedText = `\\(${text}\\)`;
+  return attention > 1 ? `\\(${addBrackets(text, attention - 1)}\\)` : escapedText;
+}

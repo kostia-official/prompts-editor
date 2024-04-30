@@ -8,6 +8,7 @@ export interface ImagePrompts {
 export interface TagObject {
   tag: string;
   group: string;
+  attention?: number;
 }
 
 export interface PromptsFileConfig {

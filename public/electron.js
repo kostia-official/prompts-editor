@@ -72,6 +72,7 @@ ipcMain.handle('sync-image-fs', async (event, { exportPath, imageName }) => {
 
 ipcMain.handle('save-image', async (event, { exportPath, fileConfig }) => {
   const savePath = path.join(exportPath, fileConfig.name);
+  console.log('savePath', savePath);
   await fs.promises.writeFile(savePath, fileConfig.buffer);
 
   return true;

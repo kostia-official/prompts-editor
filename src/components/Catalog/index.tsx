@@ -13,6 +13,7 @@ export const Catalog: React.FC = () => {
   const { imagesPrompts } = useGetAllImagesPrompts();
 
   const [filteredImagesPrompts, setFilteredImagesPrompts] = useState<ImagePrompts[]>([]);
+
   useEffect(() => {
     (async () => {
       const filtered = await getFilteredImagesPrompts(imagesPrompts);

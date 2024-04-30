@@ -3,6 +3,7 @@ import { tagsArray } from '../../../../../../data/tags';
 import { TagObject, ImagePrompts } from '../../../../../../types';
 import { Wrapper } from './styled';
 import { TagsSelect } from '../../../../../TagsSelect';
+import { addBrackets, cleanBrackets, countBrackets } from '../../../../../../utils';
 
 export interface PromptsEditorProps {
   imagePrompts: ImagePrompts;
@@ -21,14 +22,17 @@ export const PromptsEditor: React.FC<PromptsEditorProps> = ({
 
     return tags.map((tag) => {
       const trimmedTag = tag.trim();
-      const group = tagsArray.find((item) => item.tag === trimmedTag)?.group || 'unknown';
-      return { tag: trimmedTag, group };
+      const attention = countBrackets(trimmedTag.replace('\\', ''));
+      const cleanedTag = cleanBrackets(trimmedTag);
+
+      const group = tagsArray.find((item) => item.tag === cleanedTag)?.group || 'unknown';
+      return { tag: cleanedTag, group, attention };
     });
   };
 
   const [promptsTags, setPromptsTags] = React.useState<TagObject[]>(parseTags());
   const getPromptsStringFromTags = useCallback((tags: TagObject[]) => {
-    return tags.map((tag) => tag.tag).join(', ');
+    return tags.map(({ tag, attention = 0 }) => addBrackets(tag, attention)).join(', ');
   }, []);
 
   return (

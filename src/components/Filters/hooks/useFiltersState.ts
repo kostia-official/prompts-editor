@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { TagObject, ImagePrompts } from '../../../types';
-import { getImageSize } from '../../../utils';
+import { cleanBrackets, getImageSize } from '../../../utils';
 import { useLocalStorageState } from '../../../hooks/useLocalStorageState';
 
 export interface HookArgs {
@@ -55,7 +55,7 @@ export const useFiltersState = ({ key }: HookArgs) => {
               imagesToCrop.push(item.name);
             }
           } catch (err) {
-            console.log('error getting image size', err);
+            console.error('error getting image size', err);
             imagesToCrop.push(item.name);
           }
         }
@@ -67,7 +67,7 @@ export const useFiltersState = ({ key }: HookArgs) => {
         if (isOnlyEmptyPrompts) return !item.promptsString;
         if (!item.promptsString) return false;
 
-        const promptsTags = item.promptsString.split(',').map((p) => p.trim());
+        const promptsTags = item.promptsString.split(',').map((p) => cleanBrackets(p.trim()));
         return tagsFilter.every(({ tag }) => promptsTags.includes(tag));
       });
     },

@@ -3,8 +3,20 @@ import { useDropzone } from 'react-dropzone';
 import { Button } from '@mui/material';
 import { ImagePrompts } from '../../types';
 import { getFileTextContent } from '../../utils';
-import { useImagesPromptsMutations } from '../../hooks/useImagesPrompts';
+import {
+  useGetAllImagesPromptsCount,
+  useImagesPromptsMutations,
+} from '../../hooks/useImagesPrompts';
 import { useSnackbar } from 'notistack';
+
+export const getFileName = (file: File) => {
+  const extension = file.name.split('.').at(-1);
+  if (!extension) {
+    throw new Error(`wrong file name ${file.name}`);
+  }
+
+  return file.name.replace(`.${extension}`, '');
+};
 
 async function parseFiles(
   files: File[]
@@ -12,33 +24,29 @@ async function parseFiles(
   const imagesPrompts: ImagePrompts[] = [];
   const promptsWithoutImage: string[] = [];
 
-  for (const file of files) {
-    const fileName = file.name.split('.')[0];
+  const imagesFiles = files.filter((file) => file.type.startsWith('image/'));
+  const promptsFiles = files.filter((file) => file.type === 'text/plain');
 
-    let existingImagesPrompts = imagesPrompts.find((ip) => ip.name === fileName);
+  for (const imageFile of imagesFiles) {
+    const fileName = getFileName(imageFile);
 
-    if (file.type.startsWith('image/')) {
-      if (!existingImagesPrompts) {
-        existingImagesPrompts = {
-          name: fileName,
-          imageFile: file,
-          isSaved: 1,
-        };
-        imagesPrompts.push(existingImagesPrompts);
-      }
-    }
+    const promptFile = promptsFiles.find((file) => getFileName(file) === fileName);
+    const promptsString = promptFile ? await getFileTextContent(promptFile) : '';
+
+    imagesPrompts.push({
+      name: fileName,
+      imageFile,
+      isSaved: 1,
+      promptsString,
+    });
   }
 
-  for (const file of files) {
-    const fileName = file.name.split('.')[0];
-    let existingImagesPrompts = imagesPrompts.find((ip) => ip.name === fileName);
+  for (const promptFile of promptsFiles) {
+    const fileName = getFileName(promptFile);
 
-    if (file.type === 'text/plain') {
-      if (!existingImagesPrompts) {
-        promptsWithoutImage.push(fileName);
-      } else {
-        existingImagesPrompts.promptsString = await getFileTextContent(file);
-      }
+    const imageFile = imagesFiles.find((file) => getFileName(file) === fileName);
+    if (!imageFile) {
+      promptsWithoutImage.push(fileName);
     }
   }
 
@@ -46,8 +54,10 @@ async function parseFiles(
 }
 
 export const ImportFiles: React.FC = () => {
-  const { bulkPut } = useImagesPromptsMutations();
+  const { bulkPut, clear } = useImagesPromptsMutations();
   const { enqueueSnackbar } = useSnackbar();
+
+  const { count } = useGetAllImagesPromptsCount();
 
   const { getInputProps } = useDropzone({
     onDrop: async (acceptedFiles, fileRejections) => {
@@ -59,26 +69,39 @@ export const ImportFiles: React.FC = () => {
         return;
       }
 
-      const { promptsWithoutImage, imagesPrompts } = await parseFiles(acceptedFiles);
-      await bulkPut(imagesPrompts);
+      try {
+        const { promptsWithoutImage, imagesPrompts } = await parseFiles(acceptedFiles);
+        await bulkPut(imagesPrompts);
 
-      if (promptsWithoutImage.length) {
-        enqueueSnackbar(`Prompts without image\n ${JSON.stringify(promptsWithoutImage)}`, {
+        if (promptsWithoutImage.length) {
+          enqueueSnackbar(`Found prompts without image! ${promptsWithoutImage}`, {
+            variant: 'error',
+            autoHideDuration: 10000,
+          });
+          return;
+        }
+      } catch (err) {
+        enqueueSnackbar(String(err), {
           variant: 'error',
           autoHideDuration: 10000,
         });
-        return;
       }
     },
     accept: {
-      '': ['.png', '.jpeg', '.jpg', '.txt'],
+      '': ['.png', '.jpeg', '.jpg', '.txt', '.webp'],
     },
   });
 
   return (
-    <Button variant="contained" component="label">
-      Import
-      <input {...getInputProps()} />
-    </Button>
+    <>
+      <Button variant="contained" component="label" onClick={() => clear()} disabled={!count}>
+        Clear
+      </Button>
+
+      <Button variant="contained" component="label">
+        Import
+        <input {...getInputProps()} />
+      </Button>
+    </>
   );
 };

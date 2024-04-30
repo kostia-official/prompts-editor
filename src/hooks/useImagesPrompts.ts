@@ -11,6 +11,14 @@ export const useGetAllImagesPrompts = () => {
   return { imagesPrompts, loading: !imagesPrompts };
 };
 
+export const useGetAllImagesPromptsCount = () => {
+  const count = useLiveQuery(async () => {
+    return db.imagesPrompts.count();
+  });
+
+  return { count };
+};
+
 export const useGetUnsavedImagesPrompts = () => {
   const imagesPrompts = useLiveQuery(async () => {
     return db.imagesPrompts.where('isSaved').equals(0).toArray();
@@ -36,5 +44,9 @@ export const useImagesPromptsMutations = () => {
     return db.imagesPrompts.delete(name);
   }, []);
 
-  return { update, put, bulkPut, remove };
+  const clear = useCallback(() => {
+    return db.imagesPrompts.clear();
+  }, []);
+
+  return { update, put, bulkPut, remove, clear };
 };

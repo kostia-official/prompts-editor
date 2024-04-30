@@ -27,6 +27,7 @@ export const ImagePromptsEditor: React.FC<ImagePromptsEditorProps> = ({
 
   const onPromptsChange = useCallback(
     (promptsString: string) => {
+      console.log('promptsString', promptsString);
       update({ ...imagePrompts, promptsString, isSaved: 0 });
     },
     [imagePrompts, update]

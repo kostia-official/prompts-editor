@@ -21,19 +21,17 @@ interface SortableItemProps {
 }
 const SortableItem = SortableElement<SortableItemProps>(
   ({ value, onDelete, chipDisabled, onChipClick }: SortableItemProps) => {
-    const onMouseDown: MouseEventHandler<HTMLDivElement> = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    };
-
     return (
       <Chip
         key={value.tag}
-        label={value.tag}
-        onMouseDown={onMouseDown}
+        label={`${value.tag}${value.attention ? ` +${value.attention}` : ''}`}
         disabled={chipDisabled}
-        onDelete={() => onDelete(value.tag)}
-        onMouseDownCapture={onChipClick}
+        onClick={onChipClick}
+        onDelete={(e) => {
+          onDelete(value.tag);
+          e.preventDefault();
+          e.stopPropagation();
+        }}
         style={{ zIndex: 2000 }} // to use in modal
       />
     );
@@ -44,7 +42,7 @@ interface SortableListProps {
   items: TagObject[];
   onDelete: (tag: string) => void;
   disabled?: boolean;
-  onChipClick: () => void;
+  onChipClick: (tag: TagObject) => void;
 }
 
 const SortableList = SortableContainer<SortableListProps>(
@@ -58,7 +56,7 @@ const SortableList = SortableContainer<SortableListProps>(
             value={value}
             onDelete={onDelete}
             chipDisabled={disabled}
-            onChipClick={onChipClick}
+            onChipClick={() => onChipClick(value)}
           />
         ))}
       </ChipsWrapper>
@@ -68,6 +66,7 @@ const SortableList = SortableContainer<SortableListProps>(
 
 export const TagsSelect: React.FC<TagsSelectProps> = ({ selected, onChange, onBlur, disabled }) => {
   const inputRef: React.Ref<any> = React.useRef(null);
+  const selectedTags = selected.flatMap(({ tag }) => tag);
 
   const onSortEnd: SortEndHandler = useCallback(
     ({ oldIndex, newIndex }) => {
@@ -83,15 +82,43 @@ export const TagsSelect: React.FC<TagsSelectProps> = ({ selected, onChange, onBl
     [onChange, selected]
   );
 
+  const incrementAttention = useCallback(
+    (toInc: TagObject) => {
+      onChange(
+        selected.map((tag) => {
+          if (toInc.tag !== tag.tag) return tag;
+
+          if (tag.attention === undefined) {
+            return { ...tag, attention: 1 };
+          } else if (tag.attention + 1 === 3) {
+            return { ...tag, attention: 0 };
+          } else {
+            return { ...tag, attention: tag.attention + 1 };
+          }
+        })
+      );
+    },
+    [onChange, selected]
+  );
+
+  const focusInput = useCallback(() => {
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
+  }, []);
+
   return (
     <Autocomplete
       fullWidth
       multiple
       freeSolo
       disableCloseOnSelect
+      autoHighlight
+      clearOnBlur
       disabled={disabled}
       options={tagsArray}
-      getOptionLabel={(option) => (option as TagObject).tag}
+      getOptionDisabled={(option) => selectedTags.includes(option.tag)}
+      getOptionLabel={(option) => (option as TagObject)?.tag}
       groupBy={(option) => option.group}
       value={selected}
       onChange={(event, values) => {
@@ -109,11 +136,13 @@ export const TagsSelect: React.FC<TagsSelectProps> = ({ selected, onChange, onBl
           distance={4}
           disabled={disabled}
           getHelperDimensions={({ node }) => node.getBoundingClientRect()}
-          onDelete={onDelete}
-          onChipClick={() => {
-            setTimeout(() => {
-              inputRef.current?.focus();
-            }, 0);
+          onDelete={(tag) => {
+            onDelete(tag);
+            focusInput();
+          }}
+          onChipClick={(tag) => {
+            incrementAttention(tag);
+            focusInput();
           }}
         />
       )}

@@ -46,6 +46,7 @@ export const ExportFiles: React.FC = () => {
 
           await update({ ...imagePrompt, isSaved: 1 });
         } catch (err) {
+          console.log('err', err);
           enqueueSnackbar(`Can't save changes for ${name}`, {
             autoHideDuration: 3000,
             variant: 'error',
